@@ -33,8 +33,28 @@ public class PdfTextExtractor {
         } catch (IOException e){
             e.printStackTrace();
         }
+
     }
 
+    private static List<String[]> processarTexto(String texto) {
+        List<String[]> tabela = new ArrayList<>();
+        String[] linhas = texto.split("\n");
 
+        tabela.add(new String[]{"Nome Procedimento", "Codigo", " Valor"});
+
+        for (String linha : linhas) {
+            String[] colunas = linha.split("\\s{2,}");
+
+            for(int i=0; i < colunas.length; i++){
+                if(colunas[i].equals("OD")) {
+                    colunas[i] = "Descricao Completa de OD";
+                } else if(colunas[i].equals("AMB")) {
+                    colunas[i] = "Descricao completa de AMB";
+                }
+            }
+            tabela.add(colunas);
+        }
+        return tabela;
+    }
 
 }
