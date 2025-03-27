@@ -5,56 +5,67 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class PdfTextExtractor {
     public static void main(String[] args) {
         try {
-            File file = new File("C:\\Users\\USUARIO\\Desktop\\IntuitiveCare\\TesteNivelamentoIntuitiveCare1\\downloads\\Anexo_I.pdf");
-
-            PDDocument document = PDDocument.load(file);
-
-            PDFTextStripper stripper = new PDFTextStripper();
-            stripper.setStartPage(0);
-            stripper.setEndPage(document.getNumberOfPages());
-
-            String text = stripper.getText(document);
-
-            System.out.println(text);
-
-            document.close();
+            String[] arquivosPDF = {
+                    "C:\\curso\\IntuitiveCareTeste\\downloads\\Anexo_I.pdf",
+                    "C:\\curso\\IntuitiveCareTeste\\downloads\\Anexo_II.pdf"
+            };
 
             List<String[]> tabelaExtraida = new ArrayList<>();
-            tabelaExtraida.add(new String[] {"Nome Procedimento", "Código", "Valor"});
-            tabelaExtraida.add(new String[] {"Exemplo Procedimento 1", "1234", "500"});
-            tabelaExtraida.add(new String[] {"Exemplo Procedimento 2", "5678", "600"});
+            tabelaExtraida.add(new String[]{"Procedimento", "RN (Alteração)", "Vigência", "OD", "AMB", "HCO", "HSO", "REF", "PAC", "DUT", "Subgrupo", "Grupo", "Capítulo"});
+
+            for (String caminhoPDF : arquivosPDF) {
+                File file = new File(caminhoPDF);
+
+                if (!file.exists()) {
+                    System.err.println("Arquivo não encontrado: " + caminhoPDF);
+                    continue;
+                }
+
+                PDDocument document = PDDocument.load(file);
+                PDFTextStripper stripper = new PDFTextStripper();
+                stripper.setStartPage(0);
+                stripper.setEndPage(document.getNumberOfPages());
+
+                String text = stripper.getText(document);
+                System.out.println(text);
+                document.close();
+
+                tabelaExtraida.addAll(processarTexto(text));
+            }
 
             CsvWriter.salvarCsv(tabelaExtraida, "dados_extraidos.csv");
 
-        } catch (IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 
     private static List<String[]> processarTexto(String texto) {
         List<String[]> tabela = new ArrayList<>();
         String[] linhas = texto.split("\n");
 
-        tabela.add(new String[]{"Nome Procedimento", "Codigo", " Valor"});
-
         for (String linha : linhas) {
-            String[] colunas = linha.split("\\s{2,}");
+            linha = linha.replaceAll("\\s{2,}", " ").trim();
+            String[] colunas = linha.split(" ");
 
-            for(int i=0; i < colunas.length; i++){
-                if(colunas[i].equals("OD")) {
-                    colunas[i] = "Descricao Completa de OD";
-                } else if(colunas[i].equals("AMB")) {
-                    colunas[i] = "Descricao completa de AMB";
+            if (colunas.length >= 3) {
+                StringBuilder nomeProcedimentoBuilder = new StringBuilder();
+                for (int i = 0; i < colunas.length - 2; i++) {
+                    nomeProcedimentoBuilder.append(colunas[i]).append(" ");
                 }
+                String nomeProcedimento = nomeProcedimentoBuilder.toString().trim();
+                String codigo = colunas[colunas.length - 2];
+                String valor = colunas[colunas.length - 1];
+
+                tabela.add(new String[]{nomeProcedimento, codigo, valor});
             }
-            tabela.add(colunas);
         }
         return tabela;
     }
-
 }
